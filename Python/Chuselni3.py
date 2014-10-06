@@ -1,11 +1,12 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def func(x):
-    return (x / 2. + 1) * np.sin(x);
+    return x * np.cos(x);
 
 
-a = 1.0
-b = 3.0
+a = 0
+b = np.pi / 4
 N =  20
 n =  N / 2
 h = (b - a) / N
@@ -21,7 +22,7 @@ for i in xrange(1, N + 1):
     data.append(func(a + i * h))
     
     
-x = 2.4
+x = np.pi / 4
 
 table.append(data)
 
@@ -30,19 +31,49 @@ for i in xrange(1, len(data)):
     for j in xrange(0, len(table[i - 1]) - 1):
         table[i].append(table[i - 1][j + 1] - table[i - 1][j])
         
+
+newton = []
+def forwardNewton(x):
+    iValue = 0
+    t = (x - b) / h
+
+    numerator = 1
+
+    for i in xrange (0, N + 1):
+        temp = (table[i][N - i] * numerator) / factorials[i]
+        iValue += temp
+        numerator *= t
+        t -= 1
+        newton.append(temp)
+    return iValue
     
-iValue = 0
-t = (x - b) / h
+gauss = []
+def backwardGauss(x):
+    iValue = table[0][n]
+    gauss.append(iValue)
+    t = (x - (a + (b - a) / 2.)) / h
+    numeratorEven = t
+    numeratorOdd = t * (t - 1)
+    i = 1
+    while i <= n:
+        temp = (table[2 * i - 1][n - i + 1] * numeratorEven) / factorials[i * 2 - 1]
+        iValue += temp
+        gauss.append(temp)
+        temp = (table[2 * i][n - i] * numeratorOdd) / factorials[i * 2]
+        iValue += temp
+        gauss.append(temp)
+        i += 1
+        numeratorEven *= (t + i - 1) * (t - i + 1)
+        numeratorOdd *= (t + i - 1) * (t - i)
+    return iValue
 
-numerator = 1
+print func(x), forwardNewton(x), backwardGauss(0.1), func(0.1)
 
-for i in xrange (N, -1, -1):
-   iValue += (table[N - i][i] * numerator) / factorials[N - i]
-   numerator *= t
-   t += 1
-
-print func(x)
-print iValue
+xValues = [a + i * h for i in xrange (0, N + 1)]
+plt.plot(xValues, gauss)
+plt.plot(xValues, newton)
+plt.plot(xValues, data)
+plt.show();
     
     
 
