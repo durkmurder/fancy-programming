@@ -2,15 +2,11 @@
 
 #include "AbstractLogger.h"
 
-#include <mutex>
-
-
-
 class ConsoleLogger : public AbstractLogger
 {
 public:
 	ConsoleLogger();
 	~ConsoleLogger();
-	virtual void logData(const ustring &data) const;
+	virtual void logData(const ustring &data);
 };
 

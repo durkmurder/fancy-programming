@@ -11,6 +11,11 @@ Process::Process(const ustring &pCmdLine) : mCmdLine(pCmdLine)
 	initInfo();
 }
 
+Process::Process(const ustring &pCmdLine, AbstractLogger *logger) : Process(pCmdLine)
+{
+	mLogger = logger;
+}
+
 
 Process::~Process()
 {
@@ -31,24 +36,22 @@ void Process::run()
 		FALSE,          // Set handle inheritance to FALSE
 		0,              // No creation flags
 		NULL,           // Use parent's environment block
-		_tcsdup(TEXT("C:\\Windows\\Temp")),           // Use parent's starting directory 
+		_tcsdup(TEXT("C:\\Windows\\Temp")),
 		&mStartupInfo,            // Pointer to STARTUPINFO structure
 		&mProcessInfo)           // Pointer to PROCESS_INFORMATION structure
 		)
 	{
-		//throw std::runtime_error((std::string("CreateProcess failed (%d).\n") + std::to_string(GetLastError())).c_str());
+		throw std::runtime_error((std::string("CreateProcess failed (%d).\n") + std::to_string(GetLastError())).c_str());
 		printf("CreateProcess failed (%d).\n", GetLastError());
 	}
 	if (mLogger)
-		mLogger->logData(TEXT("Process has been started\n"));
+		mLogger->logData(StringBuilder() << TEXT("[LOG] ") << TEXT("Process has started, PID ") 
+										 << TO_USTRING(mProcessInfo.dwProcessId) << TEXT("\n"));
+
 	if (!onProcStarted._Empty())
 		onProcStarted();
 
-	void *m_hRegisterWait = NULL;
-	//WaitForSingleObject(mProcessInfo.hProcess, INFINITE);
 	monitor(mProcessInfo.dwProcessId);
-	//RegisterWaitForSingleObject(&m_hRegisterWait, mProcessInfo.hProcess, onTerminated, 
-		//static_cast<void*>(this), INFINITE, WT_EXECUTEONLYONCE);
 }
 
 void Process::terminate()
@@ -65,9 +68,9 @@ void Process::initInfo()
 
 void Process::clearInfo()
 {
-	if (mProcessInfo.hProcess != NULL)
+	if (mProcessInfo.hProcess)
 		CloseHandle(mProcessInfo.hProcess);
-	if (mProcessInfo.hThread != NULL)
+	if (mProcessInfo.hThread)
 		CloseHandle(mProcessInfo.hThread);
 }
 
@@ -115,7 +118,8 @@ void NTAPI Process::onTerminated(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
 		if (exitCode == 0)
 		{
 			if (sender->mLogger)
-				sender->mLogger->logData(TEXT("Process has been stoped\n"));
+				sender->mLogger->logData(StringBuilder() << TEXT("[LOG] ") << TEXT("Process has been stoped, PID ") 
+														 << TO_USTRING(sender->mProcessInfo.dwProcessId) << TEXT("\n"));
 
 			if (!sender->onProcStoped._Empty())
 				sender->onProcStoped();
@@ -123,7 +127,8 @@ void NTAPI Process::onTerminated(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
 		else
 		{
 			if (sender->mLogger)
-				sender->mLogger->logData(TEXT("Process has crashed\n"));
+				sender->mLogger->logData(StringBuilder() << TEXT("[LOG] ") << TEXT("Process has crashed, PID ") 
+														 << TO_USTRING(sender->mProcessInfo.dwProcessId) << TEXT("\n"));
 
 			if (!sender->onProcCrashed._Empty())
 				sender->onProcCrashed();
@@ -140,15 +145,25 @@ void Process::setLogger(AbstractLogger *logger)
 void Process::monitor(int pId)
 {
 	HANDLE hwndProc = OpenProcess(SYNCHRONIZE, true, pId);
+	ustring infoString;
+
 	if (hwndProc == NULL)
 	{
-		mLogger->logData(TEXT("Couldn`t open a process to monitor\n"));
+		infoString = StringBuilder() << TEXT("[LOG] ") << TEXT("Couldn`t open a process to monitor, PID: ") 
+									 << TO_USTRING(pId) << TEXT("\n");
+
+		mLogger->logData(infoString);
 		return;
 	}
+
+	infoString = StringBuilder() << TEXT("[LOG] ") << TEXT("Opened a process to monitor, PID: ") 
+								 << TO_USTRING(pId) << TEXT("\n");
+
+	mLogger->logData(infoString);
 	
-	mLogger->logData(TEXT("Opened a process to monitor\n"));
-	void *m_hRegisterWait = NULL;
-	//WaitForSingleObject(mProcessInfo.hProcess, INFINITE);
-	RegisterWaitForSingleObject(&m_hRegisterWait, hwndProc, onTerminated,
-		static_cast<void*>(this), INFINITE, WT_EXECUTEONLYONCE);
+	void *hRegisterWait = NULL;
+	if (!RegisterWaitForSingleObject(&hRegisterWait, hwndProc, onTerminated, static_cast<void*>(this), INFINITE, WT_EXECUTEONLYONCE))
+	{
+		throw std::runtime_error((std::string("RegisterWaitForSingleObject failed ") + std::to_string(GetLastError())) + std::string("\n"));
+	}
 }

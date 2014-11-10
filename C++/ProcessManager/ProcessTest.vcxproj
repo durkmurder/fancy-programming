@@ -78,13 +78,16 @@
   <ItemGroup>
     <ClCompile Include="AbstractLogger.cpp" />
     <ClCompile Include="ConsoleLogger.cpp" />
+    <ClCompile Include="FileLogger.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AbstractLogger.h" />
     <ClInclude Include="ConsoleLogger.h" />
+    <ClInclude Include="FileLogger.h" />
     <ClInclude Include="Process.h" />
+    <ClInclude Include="StringBuilder.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

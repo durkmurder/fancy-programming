@@ -9,8 +9,6 @@
 #define UCOUT std::cout
 #endif
 
-std::mutex gMutex;
-
 ConsoleLogger::ConsoleLogger()
 {
 }
@@ -20,8 +18,7 @@ ConsoleLogger::~ConsoleLogger()
 {
 }
 
-void ConsoleLogger::logData(const ustring &data) const
+void ConsoleLogger::logData(const ustring &data)
 {
-	std::lock_guard<std::mutex> lock(gMutex);
 	UCOUT << data;
 }

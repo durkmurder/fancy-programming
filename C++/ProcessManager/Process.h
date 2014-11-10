@@ -2,6 +2,7 @@
 #include <tchar.h>
 #include <functional>
 
+#include "StringBuilder.hpp"
 #include "AbstractLogger.h"
 
 #pragma once
@@ -9,6 +10,7 @@ class Process
 {
 public:
 	Process(const ustring &pCmdLine);
+	Process(const ustring &pCmdLine, AbstractLogger *logger);
 	~Process();
 	void run();
 	void terminate();
@@ -26,12 +28,17 @@ private:
 	static void NTAPI onTerminated(PVOID lpParameter, BOOLEAN TimerOrWaitFired);
 
 private:
-	ustring mCmdLine;
-	STARTUPINFO mStartupInfo;
-	PROCESS_INFORMATION mProcessInfo;
 	std::function<void()> onProcStarted;
 	std::function<void()> onProcStoped;
 	std::function<void()> onProcCrashed;
+
+private:
+	ustring mCmdLine;
+	STARTUPINFO mStartupInfo;
+	PROCESS_INFORMATION mProcessInfo;
+
 	AbstractLogger *mLogger;
+
+
 };
 
