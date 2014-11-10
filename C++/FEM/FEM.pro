@@ -4,27 +4,29 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+#greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = FEM
 TEMPLATE = app
 
 
 SOURCES += src/main.cpp\
-        src/mainwindow.cpp \
+        #src/mainwindow.cpp \
     src/integral.cpp \
     src/rectintegration.cpp \
     src/trapintegration.cpp \
-    src/gaussintegration.cpp
+    src/gaussintegration.cpp \
+    src/parabintegral.cpp
 
-HEADERS  += src/mainwindow.h \
-    src/integral.h \
+HEADERS  += src/integral.h \
+    #src/mainwindow.h \
     src/rectintegration.h \
     src/trapintegration.h \
-    src/gaussintegration.h
+    src/gaussintegration.h \
+    src/parabintegral.h
 
-FORMS    += src/mainwindow.ui
+#FORMS    += src/mainwindow.ui
 
 CONFIG += c++11
