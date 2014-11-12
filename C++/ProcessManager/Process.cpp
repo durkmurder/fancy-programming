@@ -41,22 +41,33 @@ void Process::run()
 		&mProcessInfo)           // Pointer to PROCESS_INFORMATION structure
 		)
 	{
-		throw std::runtime_error((std::string("CreateProcess failed (%d).\n") + std::to_string(GetLastError())).c_str());
-		printf("CreateProcess failed (%d).\n", GetLastError());
+		throw std::runtime_error(std::string("CreateProcess failed, errcode: ") + std::to_string(GetLastError()) + "\n");
 	}
 	if (mLogger)
 		mLogger->logData(StringBuilder() << TEXT("[LOG] ") << TEXT("Process has started, PID ") 
 										 << TO_USTRING(mProcessInfo.dwProcessId) << TEXT("\n"));
 
-	if (!onProcStarted._Empty())
-		onProcStarted();
+	onEvent(EventType::Started);
 
 	monitor(mProcessInfo.dwProcessId);
 }
 
 void Process::terminate()
 {
-	TerminateProcess(mProcessInfo.hProcess, 0);
+	if (!TerminateProcess(mProcessInfo.hProcess, 0))
+	{
+		throw std::runtime_error(std::string("TerminateProcess failed, errcode: ") + std::to_string(GetLastError()) + "\n");
+	}
+}
+
+void Process::restart()
+{
+	if (isActive())
+	{
+		terminate();
+	}
+	//Sleep(10);
+	run();
 }
 
 void Process::initInfo()
@@ -69,9 +80,9 @@ void Process::initInfo()
 void Process::clearInfo()
 {
 	if (mProcessInfo.hProcess)
-		CloseHandle(mProcessInfo.hProcess);
+		CloseHandle(mProcessInfo.hProcess); 
 	if (mProcessInfo.hThread)
-		CloseHandle(mProcessInfo.hThread);
+		CloseHandle(mProcessInfo.hThread); 
 }
 
 int Process::processId() const
@@ -84,26 +95,17 @@ bool Process::isActive() const
 	DWORD exitCode = 0;
 	if (GetExitCodeProcess(mProcessInfo.hProcess, &exitCode) == 0)
 	{
-		throw std::runtime_error((std::string("GetExitCodeProcess failed ") + std::to_string(GetLastError())) + std::string("\n"));
+		throw std::runtime_error((std::string("GetExitCodeProcess failed, errcode: ") + std::to_string(GetLastError())) + std::string("\n"));
 	}
 	return exitCode == STILL_ACTIVE ? true : false;
 }
 
 
-void Process::setOnStartCallback(std::function<void()> callback)
+void Process::setEventCallback(std::function<void()> callback, const EventType evenType)
 {
-	onProcStarted = callback;
+	mCallbaks[evenType] = callback;
 }
 
-void Process::setOnStopCallback(std::function<void()> callback)
-{
-	onProcStoped = callback;
-}
-
-void Process::setOnCrashCallback(std::function<void()> callback)
-{
-	onProcCrashed = callback;
-}
 
 void NTAPI Process::onTerminated(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
 {
@@ -111,28 +113,27 @@ void NTAPI Process::onTerminated(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
 	if (sender)
 	{
 		DWORD exitCode = 0;
-		if (GetExitCodeProcess(sender->mProcessInfo.hProcess, &exitCode) == 0)
+		if (GetExitCodeProcess(sender->mProcessInfo.hProcess, &exitCode))
 		{
-			throw std::runtime_error((std::string("GetExitCodeProcess failed ") + std::to_string(GetLastError())) + std::string("\n"));
-		}
-		if (exitCode == 0)
-		{
-			if (sender->mLogger)
-				sender->mLogger->logData(StringBuilder() << TEXT("[LOG] ") << TEXT("Process has been stoped, PID ") 
-														 << TO_USTRING(sender->mProcessInfo.dwProcessId) << TEXT("\n"));
+			if (exitCode == 0)
+			{
+				if (sender->mLogger)
+					sender->mLogger->logData(StringBuilder() << TEXT("[LOG] ") << TEXT("Process has been stoped, PID ")
+					<< TO_USTRING(sender->mProcessInfo.dwProcessId) << TEXT("\n"));
 
-			if (!sender->onProcStoped._Empty())
-				sender->onProcStoped();
-		}
-		else
-		{
-			if (sender->mLogger)
-				sender->mLogger->logData(StringBuilder() << TEXT("[LOG] ") << TEXT("Process has crashed, PID ") 
-														 << TO_USTRING(sender->mProcessInfo.dwProcessId) << TEXT("\n"));
+				sender->onEvent(EventType::Stoped);
+			}
+			else
+			{
+				if (sender->mLogger)
+					sender->mLogger->logData(StringBuilder() << TEXT("[LOG] ") << TEXT("Process has crashed, PID ")
+					<< TO_USTRING(sender->mProcessInfo.dwProcessId) << TEXT("\n"));
 
-			if (!sender->onProcCrashed._Empty())
-				sender->onProcCrashed();
+
+				sender->onEvent(EventType::Crashed);
+			}
 		}
+		
 	}
 	
 }
@@ -144,7 +145,7 @@ void Process::setLogger(AbstractLogger *logger)
 
 void Process::monitor(int pId)
 {
-	HANDLE hwndProc = OpenProcess(SYNCHRONIZE, true, pId);
+	HANDLE hwndProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pId);
 	ustring infoString;
 
 	if (hwndProc == NULL)
@@ -162,8 +163,18 @@ void Process::monitor(int pId)
 	mLogger->logData(infoString);
 	
 	void *hRegisterWait = NULL;
+	CloseHandle(mProcessInfo.hProcess); // Close previous handle
+	mProcessInfo.hProcess = hwndProc;
+	mProcessInfo.dwProcessId = pId;
+
 	if (!RegisterWaitForSingleObject(&hRegisterWait, hwndProc, onTerminated, static_cast<void*>(this), INFINITE, WT_EXECUTEONLYONCE))
 	{
-		throw std::runtime_error((std::string("RegisterWaitForSingleObject failed ") + std::to_string(GetLastError())) + std::string("\n"));
+		throw std::runtime_error((std::string("RegisterWaitForSingleObject failed, errcode: ") + std::to_string(GetLastError())) + std::string("\n"));
 	}
+}
+
+void Process::onEvent(const EventType type) const
+{
+	if (!mCallbaks[type]._Empty())
+		mCallbaks[type]();
 }
