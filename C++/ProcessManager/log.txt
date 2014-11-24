@@ -1,0 +1,9 @@
+[LOG] Opened a process to monitor, PID: 5672
+[LOG] Process is already monitoring, PID 5672
+[LOG] Process is already monitoring, PID 5672
+[LOG] Process has been stoped, PID 5672
+[LOG] Process has started, PID 1172
+[LOG] Process has been stoped, PID 1172
+[LOG] Process has started, PID 5840
+[LOG] Process has been stoped, PID 5840
+[LOG] Process has started, PID 4576

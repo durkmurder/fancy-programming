@@ -1,9 +1,11 @@
 #include <windows.h>
 #include <tchar.h>
 #include <functional>
+#include <mutex>
 
 #include "StringBuilder.hpp"
 #include "AbstractLogger.h"
+#include "CriticalSectionGuard.h"
 
 #pragma once
 class Process
@@ -18,11 +20,11 @@ public:
 
 	void run();
 	void terminate();
-	void monitor(int pId);
+	void monitor(const int pId);
 	void restart();
+	bool isRunning() const;
 
 	int processId() const;
-	bool isActive() const;
 
 	void setEventCallback(std::function<void()> callback, const EventType evenType);
 	void setLogger(AbstractLogger *logger);
@@ -30,16 +32,28 @@ public:
 private:
 	void initInfo();
 	void clearInfo();
+
 	void onEvent(const EventType type) const;
+	void logDataSafe(const ustring &str, bool isLocked);
 
 	static void NTAPI onTerminated(PVOID lpParameter, BOOLEAN TimerOrWaitFired);
 
+	static ustring NTAPI processCommandLine(void *hProcess);
 
 private:
 	ustring mCmdLine;
+	bool isMonitoring;
+	bool isActive;
+
 	STARTUPINFO mStartupInfo;
 	PROCESS_INFORMATION mProcessInfo;
-	std::function<void()> mCallbaks[3];
+
+	CriticalSection mLock;
+
+	void *hRegisterWait;
+	void *hRegisterWaitMonitor;
+
+	std::function<void()> mCallbacks[3];
 
 	AbstractLogger *mLogger;
 

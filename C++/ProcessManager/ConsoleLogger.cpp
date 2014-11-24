@@ -1,7 +1,6 @@
 #include "ConsoleLogger.h"
 
 #include <iostream>
-#include <memory>
 
 #ifdef UNICODE 
 #define UCOUT std::wcout
