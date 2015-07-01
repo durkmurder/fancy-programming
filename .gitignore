@@ -1,0 +1,4 @@
+*.o
+C++/FuturesTry/debug/moc_mainwindow.cpp
+*.Debug
+C++/FuturesTry/Makefile.Release
