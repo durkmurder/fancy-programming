@@ -2,3 +2,7 @@
 C++/FuturesTry/debug/moc_mainwindow.cpp
 *.Debug
 C++/FuturesTry/Makefile.Release
+*.exe
+*.tlog
+C++/ProcessManager/Debug/vc120.idb
+*.sdf

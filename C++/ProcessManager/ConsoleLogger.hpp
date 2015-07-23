@@ -1,17 +1,17 @@
 #pragma once
+
 #include "AbstractLogger.h"
 
 #include <string>
-#include <fstream>
 #include <iostream>
 
 template < class T >
-class FileLogger : public AbstractLogger<T>
+class ConsoleLogger : public AbstractLogger<T>
 {
 };
 
 template < >
-class FileLogger<UniversalString<std::string>> : public AbstractLogger<UniversalString<std::string>>
+class ConsoleLogger<UniversalString<std::string>> : public AbstractLogger<UniversalString<std::string>>
 {
 	virtual void logData(const std::string &data)
 	{
@@ -20,10 +20,11 @@ class FileLogger<UniversalString<std::string>> : public AbstractLogger<Universal
 };
 
 template < >
-class FileLogger<UniversalString<std::wstring>> : public AbstractLogger<UniversalString<std::wstring>>
+class ConsoleLogger<UniversalString<std::wstring>> : public AbstractLogger<UniversalString<std::wstring>>
 {
 	virtual void logData(const std::wstring &data)
 	{
 		std::wcout << data;
 	}
 };
+

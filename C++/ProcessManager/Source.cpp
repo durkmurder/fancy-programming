@@ -5,24 +5,27 @@
 #include <vector>
 #include <exception>
 
-#include "Process.h"
-#include "ConsoleLogger.h"
+#include "UniversalString.hpp"
+#include "Process.hpp"
+#include "ConsoleLogger.hpp"
 #include "FileLogger.h"
 
 enum LoggerType { Console, File };
 
 void _tmain(int argc, TCHAR *argv[])
 {
+
+	typedef UniversalString<std::wstring> UString;
 	const int N = 3;
 	std::thread th[N];
-	std::unique_ptr<AbstractLogger> cLogger(new ConsoleLogger);
-	std::unique_ptr<AbstractLogger> fLogger(new FileLogger(TEXT("log.txt")));
-	const ustring cmdLine = TEXT("notepad.exe");
-	Process newProcess(cmdLine, cLogger.get());
-	Process monitorProcess(TEXT(""), fLogger.get()); // writing log to file
+	std::unique_ptr<AbstractLogger<UString>> cLogger(new ConsoleLogger<UString>);
+	//std::unique_ptr<AbstractLogger<std::wstring>> fLogger(new FileLogger<std::wstring>(std::wstring(TEXT("log.txt"))));
+	const std::wstring cmdLine = TEXT("notepad.exe");
+	Process<UString> newProcess(cmdLine, cLogger.get());
+	//Process monitorProcess(TEXT(""), fLogger.get()); // writing log to file
 
-	newProcess.setEventCallback([](){ std::cout << "I have started" << std::endl; }, Process::Started);
-	newProcess.setEventCallback([](){ std::cout << "I have stoped" << std::endl; }, Process::Stoped);
+	newProcess.setEventCallback([](){ std::cout << "I have started" << std::endl; }, Process<UString>::Started);
+	newProcess.setEventCallback([](){ std::cout << "I have stoped" << std::endl; }, Process<UString>::Stoped);
 	std::mutex lock;
 	std::vector<std::exception_ptr>  exceptions;
 
@@ -31,7 +34,7 @@ void _tmain(int argc, TCHAR *argv[])
 		try
 		{
 			newProcess.run();
-			monitorProcess.monitor(newProcess.processId());
+			//monitorProcess.monitor(newProcess.processId());
 		}
 		catch (...)
 		{

@@ -2,33 +2,47 @@
 #include <string>
 #include <sstream>
 
-#ifdef UNICODE
-typedef std::wstring ustring;
-#define TO_USTRING(data) std::to_wstring(data)
-typedef std::wofstream uofstream;
-typedef std::wstringstream ustringstream;
-#else
-typedef std::string ustring;
-#define TO_USTRING(data) std::to_string(data)
-typedef std::ofstream uofstream;
-typedef std::stringstream ustringstream;
-#endif
-
+template < class T >
 class StringBuilder 
 {
+};
+
+template < >
+class StringBuilder <std::string>
+{
 public:
-	template<class T>
-	StringBuilder& operator<< (const T &arg) 
+	template<class U>
+	StringBuilder& operator<< (const U &arg)
 	{
 		mStream << arg;
 		return *this;
 	}
-	operator ustring() const 
+	operator std::string() const
 	{
 		return mStream.str();
 	}
 
 protected:
-	ustringstream mStream;
+	std::stringstream mStream;
+
+};
+
+template < >
+class StringBuilder <std::wstring>
+{
+public:
+	template<class U>
+	StringBuilder& operator<< (const U &arg)
+	{
+		mStream << arg;
+		return *this;
+	}
+	operator std::wstring() const
+	{
+		return mStream.str();
+	}
+
+protected:
+	std::wstringstream mStream;
 
 };

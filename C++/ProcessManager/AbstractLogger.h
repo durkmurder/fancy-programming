@@ -1,12 +1,16 @@
 #pragma once
 #include "StringBuilder.hpp"
 
+template <class T>
 class AbstractLogger
 {
 public:
-	AbstractLogger();
-	virtual ~AbstractLogger();
+	typedef typename T::StringType String;
+	AbstractLogger()
+	{}
+	virtual ~AbstractLogger()
+	{}
 
-	virtual void logData(const ustring &data) = 0;
+	virtual void logData(const String &data) = 0;
 };
 
