@@ -219,3 +219,13 @@ parseList (x:xs)
 groupAndSort :: (Ord a) => [a] -> [(a, Int)]          
 groupAndSort = map (\l@(x:xs) -> (x, length l)) . group . sort 
     
+
+fullWords :: Int -> String
+fullWords x = helper x digits []
+	where
+	digits = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"] 
+	helper 0 dig xs = xs
+	helper x dig xs = helper (x `div` 10) digits $ digits !! (x `mod` 10) ++ "-" ++ xs 
+
+identifier :: [Char] -> Bool
+identifier xs = True
