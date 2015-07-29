@@ -1,2 +1,0 @@
-durkmurder FirstTask HelloWorld
-owner task1 desc
