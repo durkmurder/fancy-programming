@@ -6,3 +6,4 @@ C++/FuturesTry/Makefile.Release
 *.tlog
 C++/ProcessManager/Debug/vc120.idb
 *.sdf
+*.idb
