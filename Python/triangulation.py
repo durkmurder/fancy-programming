@@ -8,7 +8,7 @@ import math
 
 
 nY = 5
-nX = 5
+nX = 3
 
 hX = 1. / nX
 hY = 1. / nY
