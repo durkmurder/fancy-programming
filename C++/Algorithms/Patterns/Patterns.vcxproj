@@ -143,6 +143,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Factory.hpp" />
+    <ClInclude Include="Singleton.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />

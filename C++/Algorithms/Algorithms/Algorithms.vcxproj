@@ -149,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="counting_sort.hpp" />
+    <ClInclude Include="graphs.hpp" />
     <ClInclude Include="dynamic_programming.hpp" />
     <ClInclude Include="quicksort.hpp" />
     <ClInclude Include="Utils.h" />
