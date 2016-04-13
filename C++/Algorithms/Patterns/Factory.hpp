@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <map>
+#include <memory>
 
 
 template <class IdentifierType, class ProductType>
@@ -33,7 +34,8 @@ template
 class Factory : FactoryErrorPolicy< IdentifierType, AbstractProduct >
 {
 public:
-	typedef std::function<AbstractProduct*(void)> ProductCreator;
+	typedef std::unique_ptr< AbstractProduct > ProductType;
+	typedef std::function<ProductType(void)> ProductCreator;
 	bool Register(const IdentifierType &id, ProductCreator creator)
 	{
 		return m_associations.insert(AssocMap::value_type(id, creator)).second;
@@ -44,7 +46,7 @@ public:
 		return m_associations.erase(id) == 1;
 	}
 
-	AbstractProduct *CreateObject(const IdentifierType &id)
+	ProductType CreateObject(const IdentifierType &id)
 	{
 		auto it = m_associations.find(id);
 		if (it != m_associations.end())

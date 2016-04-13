@@ -7,14 +7,19 @@
 #include "quicksort.hpp"
 #include "counting_sort.hpp"
 #include "dynamic_programming.hpp"
+#include "graphs.hpp"
 
 
 int main()
 {
 	//Algorithms::testQuickSort();
 	//Algorithms::testCountingSort();
-	Algorithms::lis();
-
+	//Algorithms::lis();
+	//Algorithms::editDistance();
+	//Algorithms::pocket();
+	//Algorithms::uniquePocket();
+	DFS();
+	BFS();
 	return 0;
 }
 

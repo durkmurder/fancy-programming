@@ -103,7 +103,7 @@ namespace Algorithms
 		// d[j] - max length of subseq that ends in A[j]
 		for (int i = 1; i < d.size(); ++i)
 		{
-			auto filtered = filterNot< std::vector<int>, std::function<bool(int)> > (d.cbegin(), d.cbegin() + i, [&](int j) { return A[j] < A[i]; });
+			auto filtered = filterNot< std::vector<int>, std::function<bool(int)> >(d.cbegin(), d.cbegin() + i, [&](int j) { return A[j] < A[i]; });
 			int max = 0;
 			auto it = std::max_element(filtered.begin(), filtered.end());
 			if (it != filtered.end())
@@ -116,8 +116,74 @@ namespace Algorithms
 
 	void editDistance()
 	{
-		std::string first;
-		std::string second;
+		std::string A = "rosettacode";
+		std::string B = "raisethysword";
+		int p = A.length() + 1;
+		int q = B.length() + 1;
+		Matrix D; // D[i,j] - optimal edit distance of prefixes which ends in i and j positions
+		D.resize(p);
+		for (int i = 0; i < p; ++i)
+			D[i].resize(q);
+
+		for (int i = 0; i < p; ++i)
+			D[i][0] = i;
+		for (int j = 0; j < q; ++j)
+			D[0][j] = j;
+
+		for (int i = 1; i < p; ++i)
+			for (int j = 1; j < q; ++j)
+				D[i][j] = std::min(std::min(D[i - 1][j] + 1, D[i][j - 1] + 1), D[i - 1][j - 1] + (A[i - 1] == B[j - 1] ? 0 : 1));
+
+		std::cout << "Edit distance between " << A << " and " << B << " is: " << D[p - 1][q - 1] << std::endl;
+	}
+
+	void pocket()
+	{
+		int W = 10;
+		std::vector<int> C { 8, 2 }; // cost of objects
+		std::vector<int> Weights { 5, 1 }; // weight of objects
+		std::vector<int> A(W); // A[w] - optimal cost of objects that we can fit in pocket of size w 
+
+		A[0] = 0;
+		for (int w = 1; w < W; ++w)
+		{
+			int max = -1;
+			for (int i = 0; i < Weights.size(); ++i)
+				if (Weights[i] <= w && (A[w - Weights[i]] + C[i]) > max)
+					max = A[w - Weights[i]] + C[i];
+			A[w] = max;
+		}
+
+		std::cout << A[W - 1] << std::endl;
+	}
+
+	void uniquePocket()
+	{
+		int W = 10;
+		std::vector<int> C{ 3, 2, 10, 1 }; // cost of objects
+		std::vector<int> Weights{ 5, 7, 4, 2 }; // weight of objects
+		Matrix A(Weights.size()); // A - optimal cost of first i objects that we can fit in pocket of size w 
+		A[0].resize(W);
+
+		for (int w = 0; w < W; ++w)
+			A[0][w] = w >= Weights[0] ? C[0] : 0; // fill first row with first object
+
+
+		for (int i = 1; i < Weights.size(); ++i)
+		{
+			A[i].resize(W);
+			for (int w = 0; w < W; ++w)
+				A[i][w] = w >= Weights[i] ? std::max(A[i - 1][w - Weights[i]] + C[i], A[i - 1][w]) : A[i - 1][w];
+		}
+
+		for (auto row : A)
+		{
+			for (auto elem : row)
+				std::cout << elem << " ";
+			std::cout << std::endl;
+		}
+
+		std::cout << A[A.size() - 1][W - 1] << std::endl;
 	}
 
 }
