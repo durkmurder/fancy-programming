@@ -6,13 +6,16 @@ import matplotlib.tri as tri
 import numpy as np
 import math
 import matplotlib.cm as cm
-
+from mpl_toolkits.mplot3d import Axes3D
 
 nY = 20
 nX = nY
 
-hX = 1. / nX
-hY = 1. / nY
+a = 0.
+b = 1.
+
+hX = (b - a) / nX
+hY = (b - a) / nY
 
 print(hX)
 
@@ -20,8 +23,8 @@ print(hX)
 #yArr = []
 #[[yArr.append(hY * i) for j in xrange(0, nX + 1)] for i in xrange(0, nY + 1)]
 
-X = np.arange(0, 1. + hX, hX)
-Y = np.arange(0, 1. + hY, hY)
+X = np.arange(a, b + hX, hX)
+Y = np.arange(a, b + hY, hY)
 
 Y, X = np.meshgrid(X, Y)
 
@@ -135,7 +138,7 @@ triang = tri.Triangulation(xArr, yArr)
 
 def f(x, y):
     return x ** 2 + y ** 2
-    #return 4.
+    return 4.
     #return x ** 2 + y ** 2
 
 triangles = triang.triangles
@@ -253,17 +256,23 @@ for row in boundary:
 U = np.linalg.solve(A, F)
 print "U: ", U
 
-plt.figure()
+Z = U.reshape(X.shape)
+
+plt.figure(1)
 plt.gca().set_aspect('equal')
 cmap = cm.get_cmap(name='terrain', lut=None)
 #plt.triplot(triang, 'bo-')
 #plt.triplot(xArr, yArr, triangles)
 plt.tripcolor(xArr, yArr, triangles, U, edgecolors='k')
-#lt.colorbar()
-plt.xlim(-0.5, 1.5)
-plt.ylim(-0.5, 1.5)
+plt.colorbar()
+#plt.xlim(-0.5, 1.5)
+#plt.ylim(-0.5, 1.5)
 plt.title('triplot of Delaunay triangulation')
 
+fig = plt.figure(2)
+ax = fig.gca(projection='3d')
+surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.coolwarm,
+                       linewidth=0, antialiased=False)
 
 
 plt.show()
