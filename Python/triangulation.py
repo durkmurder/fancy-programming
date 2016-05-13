@@ -144,6 +144,18 @@ def CalculateCoefsForShapeFunction(xValues, yValues):
 
     return result
 
+def CasterianToBarycentric(triangle):
+    x = [xArr[value] for value in triangle]
+    y = [yArr[value] for value in triangle]
+
+    detT = (y[1] - y[2]) * (x[0] - x[2]) + (x[2] - x[1]) * (y[0] - y[2])
+
+    l1 = lambda ksi, eta: ((y[1] - y[2]) * (ksi - x[2]) + (x[2] - x[1]) * (eta - y[2])) / detT
+    l2 = lambda ksi, eta: ((y[2] - y[0]) * (ksi - x[2]) + (x[0] - x[2]) * (eta - y[2])) / detT
+    l3 = lambda ksi, eta: 1 - l1(ksi, eta) - l2(ksi, eta)
+
+    return (l1, l2, l3)
+
 triang = tri.Triangulation(xArr, yArr)
 
 def f(x, y):
@@ -153,13 +165,14 @@ def p(x, y):
     return 1.
 
 def q(x, y):
-    return 10.
+    #return 0.
+    return -70.
 
 def r(x, y):
-    return -8.
+    return 0.
+    #return -8.
 
 triangles = triang.triangles
-
 
 def printMatrix(A):
     for row in A:
@@ -175,8 +188,10 @@ def GeneratePoints(order, triangle):
 
     x = [xArr[value] for value in triangle]
     y = [yArr[value] for value in triangle]
+
     if order == 3:
         return x, y
+
     elif order == 6:
         xReturn = [x[0], (x[0] + x[1]) / 2, x[1], (x[1] + x[2]) / 2, x[2], (x[2] + x[0]) / 2]
         yReturn = [y[0], (y[0] + y[1]) / 2, y[1], (y[1] + y[2]) / 2, y[2], (y[2] + y[0]) / 2]
@@ -254,11 +269,144 @@ for row in boundary:
                 A[i][value] = 1.
         F[value] = 0.
 
-
-
 U = np.linalg.solve(A, F)
 #print "U: ", U
+print len(U)
 
+'''
+END OF SOLVING FOR U, STARTING ERROR ESTIMATION
+'''
+
+E = [[0. for x in xrange(0, N)] for j in xrange(0, N)]
+EF = [0. for i in xrange(0, N)]
+
+def DShapeBubble(coefs, x, y, dx=1):
+
+    a1, b1, c1 = coefs[0][0], coefs[0][1], coefs[0][2]
+    a2, b2, c2 = coefs[1][0], coefs[1][1], coefs[1][2]
+    a3, b3, c3 = coefs[2][0], coefs[2][1], coefs[2][2]
+
+    if dx == 1:
+        return b3 * (a1 + b1 * x + c1 * y) * (a2+b2*x+c2*y) + b2 * (a1+b1*x+c1*y) * (a3+b3*x+c3*y) + b1 * (a2+b2*x+c2*y) * (a3+b3*x+c3*y)
+    else:
+        return c3 * (a1 + b1 * x + c1 * y) * (a2+b2*x+c2*y) + c2 * (a1+b1*x+c1*y) * (a3+b3*x+c3*y) + c1 * (a2+b2*x+c2*y) * (a3+b3*x+c3*y)
+
+
+for i in xrange(0, len(triangles)):
+    tri = triangles[i]
+
+    area = integrateTriangle(tri, lambda x, y: 1.)
+
+    linear = True
+    x = []
+    y = []
+    points = []
+    x, y = GeneratePoints(3, tri)
+    points = [[1, x[k], y[k]] for k in xrange(0, len(x))]
+
+    coefs = np.linalg.inv(points).transpose() * hX * hY
+
+    shapeFunc = lambda ksi, eta, index: ShapeFunction(coefs[0], ksi, eta) * \
+                                 ShapeFunction(coefs[1], ksi, eta) * \
+                                 ShapeFunction(coefs[2], ksi, eta) #* 27 / 8. / (area ** 3)
+
+    dShapeFunc = lambda ksi, eta, dx: DShapeFunction(coefs[0], area, x, y, dx)(ksi, eta) * ShapeFunction(coefs[1], ksi, eta) * ShapeFunction(coefs[2], ksi, eta) + \
+                                      DShapeFunction(coefs[1], area, x, y, dx)(ksi, eta) * ShapeFunction(coefs[0], ksi, eta) * ShapeFunction(coefs[2], ksi, eta) + \
+                                      DShapeFunction(coefs[2], area, x, y, dx)(ksi, eta) * ShapeFunction(coefs[0], ksi, eta) * ShapeFunction(coefs[1], ksi, eta) #* \
+                                      #27 / 8. / (area ** 3)
+
+    uh = lambda ksi, eta: sum([U[tri[k]] * ShapeFunction(coefs[k], ksi, eta) for k in xrange(0, 3)]) / 2. / area
+    duh = lambda ksi, eta, dx: sum([U[tri[k]] * DShapeFunction(coefs[k], area, x, y, dx)(ksi, eta) for k in xrange(0, 3)])
+
+    first = integrateTriangle(tri, lambda ksi, eta:
+                                     p(ksi, eta) *
+                                     (dShapeFunc(ksi, eta, dx=1) *
+                                      duh(ksi, eta, dx=1) +
+                                      dShapeFunc(ksi, eta, dx=0) *
+                                      duh(ksi, eta, dx=0)))
+
+    second = integrateTriangle(tri, lambda ksi, eta:
+                                             q(ksi, eta) *
+                                             (duh(ksi, eta, dx=1) +
+                                              duh(ksi, eta, dx=0)) * shapeFunc(ksi, eta, k))
+
+
+    third = integrateTriangle(tri, lambda ksi, eta:
+                                     r(ksi, eta) *
+                                     shapeFunc(ksi, eta, j) *
+                                     uh(ksi, eta))
+    str = ""
+    gold = ""
+    for j in xrange(0, 3):
+        value = integrateTriangle(tri, lambda ksi, eta: shapeFunc(ksi, eta, j) * f(ksi, eta)) - first - second - third
+        str += "%f " % value
+        EF[tri[j]] += value
+
+        for k in xrange(0, 3):
+            first = integrateTriangle(tri, lambda ksi, eta:
+                                     p(ksi, eta) *
+                                     (dShapeFunc(ksi, eta, dx=1) *
+                                      dShapeFunc(ksi, eta, dx=1) +
+                                      dShapeFunc(ksi, eta, dx=0) *
+                                      dShapeFunc(ksi, eta, dx=0)))
+
+            second = integrateTriangle(tri, lambda ksi, eta:
+                                             q(ksi, eta) *
+                                             (dShapeFunc(ksi, eta, dx=1) +
+                                              dShapeFunc(ksi, eta, dx=0)) *
+                                             shapeFunc(ksi, eta, k))
+
+
+            third = integrateTriangle(tri, lambda ksi, eta:
+                                     r(ksi, eta) *
+                                     shapeFunc(ksi, eta, j) *
+                                     shapeFunc(ksi, eta, k))
+
+            ak = first + second + third
+            E[tri[j]][tri[k]] += ak
+    #print str
+
+# printMatrix(E)
+
+
+for row in boundary:
+    for value in row:
+        for i in xrange(0, len(E)):
+            E[value][i] = 0.
+            E[i][value] = 0.
+            if i == value:
+                E[i][value] = 1.
+        EF[value] = 0.
+
+U2 = np.linalg.solve(E, EF)
+
+print N, len(U2)
+
+Z2 = np.array([0. for i in xrange(0, N)])
+
+for i in xrange(0, len(triangles)):
+    tri = triangles[i]
+
+    area = integrateTriangle(tri, lambda x, y: 1.)
+
+    linear = True
+    x = []
+    y = []
+    points = []
+    x, y = GeneratePoints(3, tri)
+    points = [[1, x[k], y[k]] for k in xrange(0, len(x))]
+
+    coefs = np.linalg.inv(points).transpose() * hX * hY
+
+    shapeFunc = lambda index, ksi, eta: ShapeFunction(coefs[0], ksi, eta) * \
+                                 ShapeFunction(coefs[1], ksi, eta) * \
+                                 ShapeFunction(coefs[2], ksi, eta) / 2. / area
+
+    for j in xrange(0, 3):
+        Z2[tri[j]] += abs(integrateTriangle(tri, lambda ksi, eta: (abs(sum([shapeFunc(coefs[k], ksi, eta) * U2[tri[k]] for k in xrange(0, 3)])) ** 2)))
+
+
+Z2 = Z2.reshape(X.shape)
 Z = U.reshape(X.shape)
 
 plt.figure(1)
@@ -273,6 +421,9 @@ ax = fig.gca(projection='3d')
 surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.coolwarm,
                        linewidth=0, antialiased=False)
 
-
+fig = plt.figure(3)
+ax = fig.gca(projection='3d')
+surf = ax.plot_surface(X, Y, Z2, rstride=1, cstride=1, cmap=cm.coolwarm,
+                       linewidth=0, antialiased=False)
 
 plt.show()
