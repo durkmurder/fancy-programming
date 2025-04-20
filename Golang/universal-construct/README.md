@@ -1,0 +1,1 @@
+This module implements an universal construction for a sequential objct.
